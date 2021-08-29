@@ -1,0 +1,171 @@
+---
+title: 'Reproducible Research: Peer Assessment 1'
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+First we have to know which library to use
+
+``` {r library}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+```
+
+## Reading Data
+
+``` {r Read}
+RawDataSet<- read.csv("C:/Users/n.taghidoost/Downloads/Compressed/activity.csv")
+```
+
+Now we change the class of Date column to be date
+
+```{r DateClass}
+RawDataSet$date <- as.Date(RawDataSet$date)
+```
+
+
+## Sum of Steps for Each Day
+
+```{r SumPerDay}
+SumPerDay <- RawDataSet %>% group_by(date) %>% summarise(sum(steps,na.rm = TRUE))
+
+colnames(SumPerDay) <- c("Date","TotalSum")
+```
+
+We can make histogram with this dataset
+
+```{r FirstPlot}
+ggplot(data=SumPerDay,aes(x=TotalSum)) +
+  geom_histogram(color="white",bins = 30,fill="orange")+
+  geom_vline(aes(xintercept=mean(TotalSum)),color="green") + 
+  geom_vline(aes(xintercept=median(TotalSum)),color="blue")+
+  ylab("Frequency")
+```
+
+### Mean
+
+```{r FirstMean,echo=FALSE}
+mean(SumPerDay$TotalSum)
+
+```
+
+### Median
+
+```{r FirstMedian,echo=FALSE}
+median(SumPerDay$TotalSum)
+
+```
+
+
+## Average Steps for Each Interval
+
+```{r SumPerInterval}
+
+SumPerInterval <- RawDataSet %>% group_by(interval) %>% summarise(mean(steps,na.rm = TRUE))
+colnames(SumPerInterval) <- c("Interval","AverageSteps")
+
+
+ggplot(data=SumPerInterval,aes(x=Interval,y=AverageSteps))+
+  geom_line(color="steelblue")
+
+
+
+```
+
+And here is the interval which has the maximum average steps:
+
+```{r MaxStepsPerInterval, echo=FALSE}
+
+as.data.frame( SumPerInterval[ which.max(SumPerInterval$AverageSteps), ] )
+
+```
+
+
+Number of null values are 
+
+```{r NumNull,echo=FALSE}
+
+sum(is.na(RawDataSet$steps))
+
+```
+
+Here we fill in the null records with the average of its interval
+
+```{r FillingNulls}
+
+MeanPerInterval <-  RawDataSet  %>%  group_by(interval) %>%
+  summarise( mean(steps,na.rm = TRUE) ) %>% data.frame()
+  
+
+DataSet_MeanInterval <- data.frame(merge(RawDataSet,MeanPerInterval,by = 'interval' )) 
+colnames(DataSet_MeanInterval)[4] <- c("MeanSteps")
+
+NA_Records <- which(is.na(RawDataSet$steps)==TRUE)
+
+RawDataSet[NA_Records,"steps"]= DataSet_MeanInterval[NA_Records,"MeanSteps"]
+```
+
+Now again we can make histogram but this time with the filled in values
+
+```{r SecondPlot}
+
+ModifiedSumPerDay <- RawDataSet %>% group_by(date) %>% summarise(sum(steps,na.rm = TRUE)) %>%     data.frame()
+
+colnames(ModifiedSumPerDay) <- c("Date","TotalSum")
+
+
+ggplot(data=ModifiedSumPerDay,aes(x=TotalSum)) +
+  geom_histogram(color="white",bins = 30,fill="orange")+
+  geom_vline(aes(xintercept=mean(TotalSum)),color="green") + 
+  geom_vline(aes(xintercept=median(TotalSum)),color="blue")+
+  theme(legend.position = "right",legend.justification = "top")+
+  ylab("Frequency")
+```
+
+
+### Mean
+
+```{r SecondMean,echo=FALSE}
+mean(ModifiedSumPerDay$TotalSum)
+
+```
+
+### Median
+
+```{r SecondMedian,echo=FALSE}
+median(ModifiedSumPerDay$TotalSum)
+
+```
+
+## Patterns in weekends and weekdays
+
+We can add a factor named "Weekday" to see if the date is weekend or not
+
+```{r WeekdayFactor}
+
+DataSet_MeanInterval <- mutate(DataSet_MeanInterval,
+                        weekday = as.factor(ifelse(weekdays(DataSet_MeanInterval$date) %in%
+                                  c("Saturday", "Sunday"),"Weekend","Weekday"
+                                         ) )
+                         )
+```
+
+
+## Average Steps for Each Interval for weekdays and weekends
+
+```{r SumPerIntervalWeekday}
+
+SumPerInterval_Weekday <- DataSet_MeanInterval %>% group_by(interval,weekday) %>% summarise(mean(steps,na.rm = TRUE))
+colnames(SumPerInterval_Weekday) <- c("Interval","Weekday","AverageSteps")
+
+
+
+ggplot(data=SumPerInterval_Weekday,aes(x=Interval,y=AverageSteps))+
+  geom_line(aes(color=Weekday))+facet_grid(Weekday~.)
+
+
+
+```

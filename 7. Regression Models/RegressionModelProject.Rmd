@@ -1,0 +1,180 @@
+---
+title: "RegressionModelProject"
+author: "Nima Taqidust"
+date: "2/23/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+### Executive Summary
+
+It looks like the manual transmission have a great impact on the MPG but if we look closer and include other variables, we can find out that the transmission type does not have a significant effect on the variable MPG.
+
+
+
+### Summary
+
+First of all we can look at the data that we want to do the analysis for:
+```{r str}
+str(mtcars)
+```
+
+```{r summary}
+summary(mtcars$mpg)
+```
+
+### Exploratory Analysis
+
+```{r groupby}
+group_by(mtcars,am) %>% summarise(mean(mpg),sd(mpg)) %>% as.data.frame()
+```
+We can see that there a distance between the mean of two types of the variable "am"
+
+Now we can get help from the boxplot to see the difference between the mgp for automatic and manual transmission (Appendix 1)
+
+
+We can split the data into two groups to run the T-test: automatic and manual transmission
+
+```{r ttest}
+mtcarsAutomatic <- mtcars[mtcars$am==0,]
+
+mtcarsManual <- mtcars[mtcars$am==1,]
+
+t.test(mtcarsAutomatic$mpg,mtcarsManual$mpg,paired = FALSE)
+```
+
+As the T-test shows, the  manual transmission are better for MPG.
+
+Now we can see the relation between all the variables in the dataset (Appendix 2)
+
+
+
+Now we see some strong relations between the variables, for a better understanding we can see the correlation between some variables:
+
+```{r cor}
+correlation <- as.data.frame(cor(mtcars$cyl,mtcars$disp))
+correlation <- as.data.frame(rbind(correlation, cor(mtcars$cyl,mtcars$hp)))
+correlation <- as.data.frame(rbind(correlation,cor(mtcars$cyl,mtcars$wt)))
+names(correlation) <- "Correlation"
+correlation
+```
+
+The results show a significant correlation between these variables so it is better not to use all these variables together.
+
+### Regression Models
+
+First of all we can do a linear regression with the independent variable "am" and the dependent variable "mpg":
+
+```{r fit1}
+fit1 <- lm(mpg~factor(am),mtcars)
+CoefFit1 <- summary(fit1)$coef
+```
+The adjusted R-squared is 0.3385
+
+From the above we know that the variables "cyl","dis","hp" and "wt" have strong correlations so I added one of them into the model named "cyl":
+
+```{r fit2}
+fit2 <- lm(mpg~factor(am)+cyl,mtcars)
+CoefFit2 <- summary(fit2)$coef
+```
+Now the adjusted R-squared is  0.7424 which is way better than before.
+We use the anova function to see if the new variable have an improvement on the model or not:
+
+```{r anova12}
+anova(fit1,fit2)
+```
+
+It had a significant effect on the model so we keep the "cyl".
+
+We added the other variables (drat,qsec,vs,gear,crab) step by step to see their impact on the model but none of them had a great effect on the model.(we used the anova function to find out the effect) (Appendix 3)
+
+At last we added the variable "wt" which had the lowest correlation with "cyl" between the variables "wt" , "hp" and "disp" (0.78)
+
+```{r fit8}
+fit8 <- lm(mpg~factor(am)+cyl+wt,mtcars)
+```
+
+Now the adjusted R-Squared is 0.81
+
+We can enrich the model with adding the wt*cyl variable
+
+```{r fit9}
+fit9 <- lm(mpg~factor(am)+cyl+wt+cyl*wt,mtcars)
+```
+
+And finally the adjusted R-Squared becomes 0.84.
+So our model is: mpg~am+cyl+wt+cyl:wt
+In this model we can clearly see that the transmission type does not affect the MPG variable and the other variables ("cyl" and "wt") are the real variables which have the impact.
+
+
+### Appendix 1
+
+```{r boxplot,echo=FALSE}
+ggplot(mtcars,aes(x=factor(mtcars$am),y=mtcars$mpg,fill=factor(mtcars$am))) +
+  geom_boxplot()+ 
+  scale_fill_discrete(name = "Transmission", labels = c("Automatic", "Manual"))+
+  xlab("Transmission") + ylab("MPG")
+```
+
+### Appendix 2
+```{r,echo=FALSE}
+pairs(mtcars$mpg ~ .,data=mtcars)
+```
+
+
+
+### Appendix 3
+
+```{r fit3}
+fit3 <- lm(mpg~factor(am)+cyl+drat,mtcars)
+anova(fit1,fit2,fit3)
+```
+
+```{r fit4}
+fit4 <- lm(mpg~factor(am)+cyl+qsec,mtcars)
+anova(fit1,fit2,fit4)
+```
+
+```{r fit5}
+
+fit5 <- lm(mpg~factor(am)+cyl+factor(vs),mtcars)
+anova(fit1,fit2,fit5)
+```
+
+```{r fit6}
+
+fit6 <- lm(mpg~factor(am)+cyl+factor(gear),mtcars)
+anova(fit1,fit2,fit6)
+```
+
+```{r fit7}
+
+fit7 <- lm(mpg~factor(am)+cyl+factor(carb),mtcars)
+anova(fit1,fit2,fit7)
+```
+
+
+### Appendix 4
+
+```{r appendix}
+FittedMPGs <- as.integer(predict(fit2))
+mtcars <- mutate(mtcars,FittedMPGs)
+mtcars
+```
+
+### Appendix 5
+```{r plotRes,echo=FALSE}
+  par(mfrow=c(2,2))
+  plot(fit2)
+```
+
