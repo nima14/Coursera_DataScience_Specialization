@@ -54,7 +54,7 @@ Finding the best lambda for reduced probability needed evaluation and cross-vali
 Data Product & Source Codes
 ========================================================
 
-- You can see the R Codes in github in [here](https://github.com/nima14/CapstoneProject_JHK).
+- You can see the R Codes in githubs in [here](https://github.com/nima14/Coursera_DataScience_Specialization/tree/main/10.%20Data%20Science%20Capstone).
 - The result of the model is shown on R Shiny and you can type the sentences and our
 model can suggest the top 5 words. The link to R Shiny is [here](https://nimataghidoost.shinyapps.io/CapstoneProject_JHK/)
 
