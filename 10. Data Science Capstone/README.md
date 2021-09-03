@@ -2,7 +2,9 @@ Objective: Designing an application to predict the next word based on previous u
 
 It is coded in R and visualized with Shiny app.
 
-Exploratory DATA Analysis of this [project](https://rpubs.com/Nima14/Capstone_Milestone_JHK)
+Exploratory Data Analysis of this project:
+
+https://rpubs.com/Nima14/Capstone_Milestone_JHK
 
 Project's Presentation:
 
